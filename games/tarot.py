@@ -19,7 +19,7 @@ class Tarot(DefaultCommands):
         self.first_giver_index = 0
         self.taker_index = 0
         self.first_index = 0
-        self.leader_index = 0
+        self.leader_index = -1
         self.player_excuse_index = -1
         self.taker_bonus = 0
         self.defense_bonus = 0
@@ -41,7 +41,7 @@ class Tarot(DefaultCommands):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.id == 969872133998116944 and message.guild and ("Table" in message.content or message.attachments):
+        if message.author.id == 969872133998116944 and message.guild and self.game_phase == 4 and ("Table" in message.content or message.attachments):
             self.old_table.append(message)
 
     async def _init_game(self, ctx):
@@ -249,23 +249,27 @@ class Tarot(DefaultCommands):
 
             else:
                 await ctx.send("Aucune enchère n'a été prise : re-distribution des cartes.")
-                self.__init__(self.config)
+
+                for i in self.players:
+                    i.cards.clear()
+                self.cards = shuffle_cards(78)
+                self.game_phase = 0
                 await self.commencer(ctx)
         else:
             await ctx.send(f"C'est à {self.players[self.player_index].user_name} de dire son enchère.")
 
-    @commands.command(name="écarter", help="Une fois l'enchère prise, le joueur peut-être amené à écarter six cartes de son jeu.", brief="Écarter les six cartes.")
+    @commands.command(name="écarte", aliases=["écarter"], help="Une fois l'enchère prise, le joueur peut être amené à écarter six cartes de son jeu.", brief="Écarter les six cartes.")
     @commands.check(private)
-    async def ecarter(self, ctx, *cartes): # phase : 3
+    async def ecarte(self, ctx, *cartes): # phase : 3
         player = self.players[self.player_index] # player = self.get_player_from_id(ctx.author.id, check_turn=True)
         if not player: await ctx.send("*Erreur : vous n'êtes pas un joueur enregistré ou ce n'est pas votre tour.*") ; return
         if self.game_phase != 3: await ctx.send("*Erreur : ce n'est pas le moment d'écarter des cartes.*") ; return
 
         cards_id = get_cards_id(*cartes)
         if len(cards_id) != 6: await player.send("*Erreur : vous devez écarter six cartes.*") ; return
-        for i in cards_id:
+        for index, i in enumerate(cards_id):
             if not i in player.cards:
-                await player.send("*Erreur : vous ne possédez pas cette carte.*")
+                await player.send(f"*Erreur : vous ne possédez pas cette carte : '{cartes[i]}'.*")
                 return
             if (i % 14 == 13) or i in (56, 76, 77):
                 await player.send("*Erreur : vous ne pouvez pas donner de Roi ou de Bouts.*")
@@ -286,7 +290,7 @@ class Tarot(DefaultCommands):
         self.trick_index = 0
         self.game_phase += 1
 
-    @commands.command(help="Poser une carte sur la table.\nLes cartes sont repérées par leur valeur (1 - R) suivi de leur couleur (pi, co, ca, tr). Pour les atouts, indiquez seulement A suivi de la valeur. E pour jouer l'Excuse.", brief="Poser une carte.")
+    @commands.command(aliases=["poser"], help="Poser une carte sur la table.\nLes cartes sont repérées par leur valeur (1 - R) suivi de leur couleur (pi, co, ca, tr). Pour les atouts, indiquez seulement A suivi de la valeur. E pour jouer l'Excuse.", brief="Poser une carte.")
     @commands.check(public)
     async def pose(self, ctx, carte: str): # phase : 4
         player = self.players[self.player_index] # player = self.get_player_from_id(ctx.author.id, check_turn=True)
@@ -337,7 +341,7 @@ class Tarot(DefaultCommands):
 
         # Mise à jour du leader de la levée
         leader_card = get_leader_card(self.table, self.leader_index)
-        if leader_card and self.CARDS_BY_DESC.index(card_id) < self.CARDS_BY_DESC.index(leader_card):
+        if leader_card != -1 and self.CARDS_BY_DESC.index(card_id) < self.CARDS_BY_DESC.index(leader_card):
             self.leader_index = self.player_index
 
         player.cards.remove(card_id)
@@ -367,6 +371,7 @@ class Tarot(DefaultCommands):
             self.table.clear()
             self.first_index = self.leader_index
             self.trick_index += 1
+            self.leader_index = -1
             self.ref_card = -1
 
 
@@ -404,6 +409,7 @@ class Tarot(DefaultCommands):
                     points += self.taker_bonus
                     points -= self.defense_bonus 
                     
+                    points = int(points)
                     for index, player in enumerate(self.players):
                         if index == self.taker_index:
                             msg += f" - {player.user_name} : +{3 * points} points (preneur)\n"
@@ -420,17 +426,19 @@ class Tarot(DefaultCommands):
                     points -= self.taker_bonus
                     points += self.defense_bonus
 
+                    points = int(points)
                     for index, player in enumerate(self.players):
                         if index == self.taker_index:
-                            msg += f" - {player.user_name} : -{3 * points} points\n"
+                            msg += f" - {player.user_name} : -{3 * points} points (preneur)\n"
                             player.points.append(-3 * points)
                         else:
-                            msg += f" - {player.user_name} : +{points} points\n"
+                            msg += f" - {player.user_name} : +{points} points (défense)\n"
                             player.points.append(points)
                 await ctx.send(msg)
                 await ctx.send(generate_result_table(self.players))
 
                 self.giver_index = (self.giver_index + 1) % 4
+                self.player_index = (self.giver_index + 1) % 4
                 if self.giver_index == self.first_giver_index:
                     await ctx.send(f"Fin de la partie :\n{generate_result_table(self.players)}")
                     self.__init__(self.config)
@@ -472,8 +480,8 @@ class Player(DefaultPlayer):
         self.auction = 0
 
     def select_trump_cards(self, min_value=56):
-        if not (56 <= min_value <= 77): min_value = 56
-        return [i for i in self.cards if i >= min_value]
+        if not (56 <= min_value <= 76): min_value = 56
+        return [i for i in self.cards if (min_value <= i < 77)]
 
     def convert_points(self):
         if len(self.points) == 4: self.points.append(sum(self.points))        
@@ -499,13 +507,14 @@ def get_leader_card(table, leader_index):
     for i in table:
         if i[1] == leader_index:
             return i[0]
+    return -1
 
 
 def get_low_value_card(cards):
-    for i in self.cards:
+    for i in cards:
         if i < 56 and (i % 14) < 10: return i
 
-def check_chelem(taker_tricks, defense_tricks, players, taker_index):
+def get_chelem_points(taker_tricks, defense_tricks, players, taker_index):
     def get_chelem_player(players):
         for index, player in enumerate(players):
             if player.chelem: return index

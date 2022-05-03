@@ -4,8 +4,10 @@ from PIL import Image
 import os
 from random import randint
 
-CARD_WIDTH = 740
-CARD_HEIGHT = 1358
+# CARD_WIDTH = 740
+# CARD_HEIGHT = 1358
+CARD_WIDTH = 370
+CARD_HEIGHT = 679
 CARDS_PER_IMG = 6
 
 

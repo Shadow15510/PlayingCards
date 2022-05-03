@@ -385,7 +385,7 @@ class Tarot(DefaultCommands):
                             self.taker_tricks.append(77)
                             self.taker_tricks.remove(low_value_card)
                     else:
-                        if 77 in self.taker_ticks:
+                        if 77 in self.taker_tricks:
                             low_value_card = get_low_value_card(self.defense_tricks)
                             self.taker_tricks.append(low_value_card)
                             self.taker_tricks.remove(77)

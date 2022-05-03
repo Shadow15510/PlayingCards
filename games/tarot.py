@@ -13,7 +13,7 @@ class Tarot(DefaultCommands):
         self.CARDS_BY_DESC.append(77)
         
         # Joueurs
-        self.players = [Player(-1, "Test 1", None, 0), Player(-2, "Test 2", None, 1), Player(-3, "Test 3", None, 2)]
+        self.players = []
         self.player_index = 0
         self.giver_index = 0
         self.first_giver_index = 0
@@ -85,7 +85,7 @@ class Tarot(DefaultCommands):
     @commands.command(name="poignée", help="Permet de déclarer une poignée de 10, 13 ou 15 atouts. Une poignée non déclarée n'est pas prise en compte dans les points. Déclarer une poignée affiche vos atouts au reste de la table.", brief="Déclarer une poignée.")
     @commands.check(public)
     async def poignee(self, ctx):
-        player = self.players[self.player_index] # player = self.get_player_from_id(ctx.author.id, check_turn=True)
+        player = self.get_player_from_id(ctx.author.id, check_turn=True)
         if not player: await ctx.send("*Erreur : vous n'êtes pas un joueur enregistré ou ce n'est pas votre tour.*") ; return
         if not self.game_phase in (2, 3): await ctx.send("*Erreur : ce n'est pas le moment d'annoncer une poignée.*") ; return
 
@@ -127,8 +127,6 @@ class Tarot(DefaultCommands):
         if ctx.author.nick: name = ctx.author.nick
         else: name = ctx.author.name
         self.players.append(Player(ctx.author.id, name, ctx.author.send, len(self.players)))
-        for i in range(3):
-            self.players[i].send = ctx.author.send
 
         await ctx.send(f"{name} a rejoint la partie.")
         await self.players[-1].send("Bienvenue, une partie de Tarot est en train de commencer.")
@@ -141,6 +139,7 @@ class Tarot(DefaultCommands):
         if len(self.players) < 4: await ctx.send(f"*Erreur : il n'y a pas assez de joueurs ({len(self.players)} / 4).*") ; return
         elif len(self.players) > 4: await ctx.send(f"*Erreurs : il y a trop de joueurs. Les derniers arrivés ({', '.join([i.user_name for i in self.players[4:]])}) seront ignorés.*")
         if self.game_phase: await ctx.send("*Erreur : une partie est déjà commencée.*")
+        
         # Déclaration de la partie comme commencée
         await ctx.send("La partie commence.")
 
@@ -168,7 +167,7 @@ class Tarot(DefaultCommands):
     @commands.command(name="enchère", help="Détermine le type d'enchère. Il existe 4 types d'enchères : prise, garde, garde sans et garde contre. À son tour le joueur peut aussi choisir de passer. Le joueur peut ajouer 'chelem' à la fin de son enchère pour annoncer un Chelem.", brief="Annoncer son enchère.")
     @commands.check(public)
     async def enchere(self, ctx, *type_enchere: str): # phase : 2
-        player = self.players[self.player_index] # player = self.get_player_from_id(ctx.author.id, check_turn=True)
+        player = self.get_player_from_id(ctx.author.id, check_turn=True)
         if not player: await ctx.send("*Erreur : vous n'êtes pas un joueur enregistré ou ce n'est pas votre tour.*") ; return
         if self.game_phase != 2: await ctx.send("*Erreur : ce n'est pas le moment des enchères.*") ; return
 
@@ -261,7 +260,7 @@ class Tarot(DefaultCommands):
     @commands.command(name="écarte", aliases=["écarter"], help="Une fois l'enchère prise, le joueur peut être amené à écarter six cartes de son jeu.", brief="Écarter les six cartes.")
     @commands.check(private)
     async def ecarte(self, ctx, *cartes): # phase : 3
-        player = self.players[self.player_index] # player = self.get_player_from_id(ctx.author.id, check_turn=True)
+        player = self.get_player_from_id(ctx.author.id, check_turn=True)
         if not player: await ctx.send("*Erreur : vous n'êtes pas un joueur enregistré ou ce n'est pas votre tour.*") ; return
         if self.game_phase != 3: await ctx.send("*Erreur : ce n'est pas le moment d'écarter des cartes.*") ; return
 
@@ -293,7 +292,7 @@ class Tarot(DefaultCommands):
     @commands.command(aliases=["poser"], help="Poser une carte sur la table.\nLes cartes sont repérées par leur valeur (1 - R) suivi de leur couleur (pi, co, ca, tr). Pour les atouts, indiquez seulement A suivi de la valeur. E pour jouer l'Excuse.", brief="Poser une carte.")
     @commands.check(public)
     async def pose(self, ctx, carte: str): # phase : 4
-        player = self.players[self.player_index] # player = self.get_player_from_id(ctx.author.id, check_turn=True)
+        player = self.get_player_from_id(ctx.author.id, check_turn=True)
         if not player: await ctx.send("*Erreur : vous n'êtes pas un joueur enregistré ou ce n'est pas votre tour.*") ; return
         if self.game_phase != 4: await ctx.send("*Erreur : ce n'est pas le moment de poser une carte.*") ; return
 

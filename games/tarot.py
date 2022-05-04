@@ -124,6 +124,8 @@ class Tarot(DefaultCommands):
     @commands.command(help="Permet de rejoindre une partie.", brief="Rejoindre une partie.")
     @commands.check(public)
     async def rejoindre(self, ctx): # phase : 0
+        player = self.get_player_from_id(ctx.author.id)
+        if player: await ctx.send("*Erreur : vous avez déjà rejoint la partie.*") ; return
         if self.game_phase: await ctx.send("*Erreur : une partie est déjà commencée.*") ; return
 
         if ctx.author.nick: name = ctx.author.nick
@@ -460,7 +462,7 @@ class Tarot(DefaultCommands):
 
     @commands.command(aliases=["sauvegarder"], help="Sauvegarde la partie en cours.", brief="Sauvegarde la partie en cours.")
     async def sauvegarde(self, ctx, nom: str):
-        with open(f"[TAROT]{nom}.json", "w") as file:
+        with open(f"saves/[TAROT]{nom}.json", "w") as file:
             file.write(json.dumps(
                 {
                     "guild_id": ctx.guild.id,
@@ -473,7 +475,7 @@ class Tarot(DefaultCommands):
 
     @commands.command(aliases=["charger"], help="Charge la partie demandée.", brief="Charge la partie demandée.")
     async def charge(self, ctx, nom: str):
-        with open(f"[TAROT]{nom}.json", "r") as file:
+        with open(f"saves/[TAROT]{nom}.json", "r") as file:
             data = json.loads(file.read())
 
         self.__init__(self.config, self.bot)

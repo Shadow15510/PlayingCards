@@ -9,6 +9,9 @@ from games.tarot import Tarot
 with open("config.json", "r") as file:
     config = json.load(file)
 
+if not "saves" in os.listdir():
+    os.mkdir("saves")
+
 playing_cards = commands.Bot(command_prefix=config["PREFIX"], strip_after_prefix=True)
 
 

@@ -30,10 +30,9 @@ async def on_ready():
     print(f"Chargement du jeu :{games_list[game - 1].split('.')[1]}")
 
     if game == 1:
-        playing_cards.add_cog(Tarot(config))
+        playing_cards.add_cog(Tarot(config, playing_cards))
 
     print("Connecté")
-
 
 playing_cards.run(config["TOKEN"])
 

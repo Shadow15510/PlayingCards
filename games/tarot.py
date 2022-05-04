@@ -1,11 +1,13 @@
+import json
 from lib_playingcards import *
 
 
 class Tarot(DefaultCommands):
-    def __init__(self, config):
+    def __init__(self, config, bot):
         # Constantes
         self.config = config
         self.PREFIX = config["PREFIX"]
+        self.bot = bot
         self.CARDS_BY_DESC = []
         for i in range(76, 55, -1): self.CARDS_BY_DESC.append(i)
         for i in range(13, -1, -1):
@@ -456,6 +458,72 @@ class Tarot(DefaultCommands):
         else:
             await ctx.send(f"C'est au tour de {self.players[self.player_index].user_name} de poser une carte.")
 
+    @commands.command(aliases=["sauvegarder"], help="Sauvegarde la partie en cours.", brief="Sauvegarde la partie en cours.")
+    async def sauvegarde(self, ctx, nom: str):
+        with open(f"[TAROT]{nom}.json", "w") as file:
+            file.write(json.dumps(
+                {
+                    "guild_id": ctx.guild.id,
+                    "players": [i.export() for i in self.players],
+                    "players_vars": [self.player_index, self.giver_index, self.first_giver_index, self.taker_index, self.first_index, self.leader_index, self.player_excuse_index, self.taker_bonus, self.defense_bonus],
+                    "cards": [self.cards, self.taker_tricks, self.defense_tricks, self.table, self.ref_card],
+                    "misc": [self.game_phase, self.trick_index, self.old_table, self.auction]
+                }))
+        await ctx.send("Partie sauvegardée.")
+
+    @commands.command(aliases=["charger"], help="Charge la partie demandée.", brief="Charge la partie demandée.")
+    async def charge(self, ctx, nom: str):
+        with open(f"[TAROT]{nom}.json", "r") as file:
+            data = json.loads(file.read())
+
+        self.__init__(self.config, self.bot)
+
+        guild = self.bot.get_guild(data["guild_id"])
+        self.guild_send = ctx.send
+        for i in data["players"]:
+            member = await guild.fetch_member(i[0])
+            i[2] = member.send
+            self.players.append(Player(*i))
+
+        self.player_index = data["players_vars"][0]
+        self.giver_index = data["players_vars"][1]
+        self.first_giver_index = data["players_vars"][2]
+        self.taker_index = data["players_vars"][3]
+        self.first_index = data["players_vars"][4]
+        self.leader_index = data["players_vars"][5]
+        self.player_excuse_index = data["players_vars"][6]
+        self.taker_bonus = data["players_vars"][7]
+        self.defense_bonus = data["players_vars"][8]
+        
+        self.cards = data["cards"][0]
+        self.taker_tricks = data["cards"][1]
+        self.defense_tricks = data["cards"][2]
+        self.table = data["cards"][3]
+        self.ref_card = data["cards"][4]
+
+        self.game_phase = data["misc"][0]
+        self.trick_index = data["misc"][1]
+        self.old_table = data["misc"][2]
+        self.auction = data["misc"][3]
+
+        await ctx.send("Partie chargée.")
+        if self.game_phase == 0:
+            await ctx.send("La partie n'est pas encore commencée.")
+        elif self.game_phase == 1:
+            await ctx.send("La partie vient de commencer.")
+        elif self.game_phase == 2:
+            await ctx.send(f"C'est à {self.players[self.player_index].user_name} de dire son enchère.")
+        elif self.game_phase == 3:
+            await ctx.send(f"{self.players[self.player_index].user_name} doit écarter six cartes de son jeu.")
+        elif self.game_phase == 4:
+            await ctx.send(f"C'est à de {self.players[self.player_index].user_name} de poser une carte.")
+
+        if self.game_phase:
+            for i in self.players: await i.send_private_deck()
+            if self.game_phase == 4: await send_deck(ctx, "Table", self.table, False)
+
+
+
 
 class Player(DefaultPlayer):
     def __init__(self, user_id, user_name, send, index, cards=[], points=[]):
@@ -474,13 +542,15 @@ class Player(DefaultPlayer):
         self.chelem = 0
         self.bonus = 0
 
-
     def clean_auction(self):
         self.auction = 0
 
     def select_trump_cards(self, min_value=56):
         if not (56 <= min_value <= 76): min_value = 56
         return [i for i in self.cards if (min_value <= i < 77)]
+
+    def export(self):
+        return [self.user_id, self.user_name, None, self.index, self.cards, self.points]
 
     def convert_points(self):
         if len(self.points) == 4: self.points.append(sum(self.points))        

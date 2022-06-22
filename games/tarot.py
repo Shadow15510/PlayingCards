@@ -524,12 +524,6 @@ class Tarot(DefaultCommands):
             for i in self.players: await i.send_private_deck()
             if self.game_phase == 4: await send_deck(ctx, "Table", self.table, False)
 
-    @commands.command()
-    async def test(self, ctx):
-        await send_deck(ctx.send, "TEST", self.cards[:12])
-
-
-
 
 
 class Player(DefaultPlayer):

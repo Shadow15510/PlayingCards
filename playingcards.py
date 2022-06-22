@@ -21,7 +21,12 @@ async def on_ready():
     await playing_cards.change_presence(activity=activity)
 
     game = 0
-    games_list = [f"{index + 1}. {value.split('.')[0].title()}" for index, value in enumerate(os.listdir('games')) if value != "__pycache__"]
+    games_list, index = [], 1
+    for value in os.listdir('games'):
+        if value != "__pycache__":
+            games_list.append(f"{index}. {value.split('.')[0].title()}")
+            index += 1
+            
     games_str = "\n".join(games_list)
     while not game:
         print(f"Quel jeu charger ?\n{games_str}")

@@ -524,6 +524,11 @@ class Tarot(DefaultCommands):
             for i in self.players: await i.send_private_deck()
             if self.game_phase == 4: await send_deck(ctx, "Table", self.table, False)
 
+    @commands.command()
+    async def test(self, ctx):
+        await send_deck(ctx.send, "TEST", self.cards[:12])
+
+
 
 
 
@@ -609,7 +614,7 @@ def get_chelem_points(taker_tricks, defense_tricks, players, taker_index):
 def points_counter(cards):
     points, oulder = 0, 0
     for i in cards:
-        if i in (56, 76, 77):points += 4.5 ; oulder += 1
+        if i in (56, 76, 77): points += 4.5 ; oulder += 1
         elif (i % 14) == 13: points += 4.5
         elif (i % 14) == 12: points += 3.5
         elif (i % 14) == 11: points += 2.5

@@ -4,10 +4,9 @@ from PIL import Image
 import os
 from random import randint
 
-# CARD_WIDTH = 740
-# CARD_HEIGHT = 1358
-CARD_WIDTH = 370
-CARD_HEIGHT = 679
+
+CARD_WIDTH = 185
+CARD_HEIGHT = 340
 CARDS_PER_IMG = 6
 
 
@@ -40,7 +39,7 @@ def shuffle_cards(nb):
 
 
 def generate_deck(*cards):
-    tarotcards = Image.open("tarotcards.gif")
+    tarotcards = Image.open("cards.gif")
     n = len(cards)
     sup_img = 1 if n % CARDS_PER_IMG else 0
     decks = [Image.new(mode="RGBA", size=(CARD_WIDTH * CARDS_PER_IMG, CARD_HEIGHT)) for _ in range(sup_img + n // CARDS_PER_IMG)]

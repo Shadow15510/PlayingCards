@@ -78,7 +78,9 @@ def get_cards_id(*cards):
         elif card.endswith("tr"):
             cards_id.append(values.index(card[:-2]) + 42)
         elif card.startswith("a"):
-            cards_id.append(55 + int(card[1:]))
+            nb = int(card[1:])
+            if 1 <= nb <= 21: cards_id.append(55 + nb)
+            else: raise ValueError(f"{nb} isn't a valid trump value")
         elif card == "e":
             cards_id.append(77)
     

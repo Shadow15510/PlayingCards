@@ -17,9 +17,6 @@ playing_cards = commands.Bot(command_prefix=config["PREFIX"], strip_after_prefix
 
 @playing_cards.event
 async def on_ready():
-    activity = discord.Activity(type=discord.ActivityType.watching, name=config["PREFIX"] + "aide")
-    await playing_cards.change_presence(activity=activity)
-
     game = 0
     games_list, index = [], 1
     for value in os.listdir('games'):
@@ -40,6 +37,8 @@ async def on_ready():
     if game == 1:
         playing_cards.add_cog(Tarot(config, playing_cards))
 
+    activity = discord.Activity(type=discord.ActivityType.playing, name=f"{games_list[game - 1].split('.')[1]} │ {config['PREFIX']}aide")
+    await playing_cards.change_presence(activity=activity)
     print("Connecté")
 
 playing_cards.run(config["TOKEN"])

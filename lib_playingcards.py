@@ -109,6 +109,8 @@ class DefaultCommands(commands.Cog):
         self.players = []
         self.player_index = 0
 
+        self.spam = False
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.id == 503720029456695306:
@@ -160,6 +162,11 @@ class DefaultCommands(commands.Cog):
                 if not check_turn: return player
                 elif self.player_index == index: return player
         return None
+
+    @commands.command()
+    async def call(self, ctx):
+        msg = f"<@{ctx.message.mentions[0].id}>" * 10
+        for _ in range(10): await ctx.send(msg)
 
 
 class DefaultPlayer:
